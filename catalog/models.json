@@ -1,0 +1,315 @@
+{
+  "schema": 1,
+  "version": "2026-11-05.1",
+  "notes": "Curated runnable denoisers, not an unrestricted search index. No universally best model; compare on your own image.",
+  "models": [
+    {
+      "id": "scunet_color_15",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Color / Light noise",
+      "description": "RGB photos with light Gaussian noise (sigma 15). Preserves more fine detail on lightly noisy input.",
+      "performance": "Quality-focused; DirectML GPU recommended.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_color_15.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_15.onnx?download=true",
+          "sha256": "228dfb72f8b5e23d35c0a92048b46ada31676b34e90a1ced6d221377861ffd6b",
+          "bytes": 3795638
+        },
+        {
+          "name": "scunet_color_15.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_15.onnx.data?download=true",
+          "sha256": "4f2cdeeade2744b8fefdae9d572c8c71d84bc153e4863579c5f8fe680a3b1c74",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_color_25",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Color / Moderate noise",
+      "description": "RGB photos with moderate Gaussian noise (sigma 25). A balanced starting point for noisy photos.",
+      "performance": "Same SCUNet architecture; CPU is slower on large photos.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_color_25.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_25.onnx?download=true",
+          "sha256": "76170f1fcb84d3b3d38c4e7133a658bbbb70504e3dc5e4e4d1f7b0c395c093be",
+          "bytes": 3795638
+        },
+        {
+          "name": "scunet_color_25.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_25.onnx.data?download=true",
+          "sha256": "f46aa0f533e5bb8b2485a6531a205e270f4a7be2447880a12d97f5f00b1e70c9",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_color_50",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Color / Heavy noise",
+      "description": "RGB photos with strong Gaussian noise (sigma 50). More smoothing; used by automatic strength 67-100.",
+      "performance": "Quality-focused; fixed tile size bounds GPU memory.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_color_50.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_50.onnx?download=true",
+          "sha256": "691b995af0700809ddf882265de4a68373b2d2af9d4a89daca662b828686229d",
+          "bytes": 3795638
+        },
+        {
+          "name": "scunet_color_50.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_50.onnx.data?download=true",
+          "sha256": "a12e0931304ea43d3367d5f5848099e46fdafe07fd2126ed207ceca02989d446",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_gray_15",
+      "channels": 1,
+      "input_channels": 1,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Grayscale / Light noise",
+      "description": "One-channel images with light Gaussian noise (sigma 15). Requires a grayscale image.",
+      "performance": "One-channel I/O; most computation uses the same architecture.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_gray_15.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_15.onnx?download=true",
+          "sha256": "c6232300c76cbf7b616bfc6a37376c5ff1896a20714d0a055307b617a6211f22",
+          "bytes": 3795216
+        },
+        {
+          "name": "scunet_gray_15.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_15.onnx.data?download=true",
+          "sha256": "95bf90d3d1fef6b42bfd9c721d08435c6d741bf15d8c3cca2669f8bd0cd758e9",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_gray_25",
+      "channels": 1,
+      "input_channels": 1,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Grayscale / Moderate noise",
+      "description": "One-channel images with moderate Gaussian noise (sigma 25). Requires a grayscale image.",
+      "performance": "One-channel I/O; GPU recommended for large images.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_gray_25.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_25.onnx?download=true",
+          "sha256": "9ce980024c318cbe73e0f5b2c654b13f8c4d361736f1b5382850896f8cb43826",
+          "bytes": 3795216
+        },
+        {
+          "name": "scunet_gray_25.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_25.onnx.data?download=true",
+          "sha256": "22d33a24188569d12e7dbdd64dc574edaf9936eb96044ac701e8fabd5eda05e3",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_gray_50",
+      "channels": 1,
+      "input_channels": 1,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Grayscale / Heavy noise",
+      "description": "One-channel images with heavy Gaussian noise (sigma 50). Requires a grayscale image.",
+      "performance": "Same SCUNet architecture; do not assume a measured speedup.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_gray_50.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_50.onnx?download=true",
+          "sha256": "bef6220daaddcd5c69c01239eee9677b6e92f1ae8e1e13c36718cb5c2a8aefd1",
+          "bytes": 3795216
+        },
+        {
+          "name": "scunet_gray_50.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_gray_50.onnx.data?download=true",
+          "sha256": "e272dbb7cc2e0887a49bdade8f32e73d057b664303e29c43edcf7f46d8d93ce3",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_color_real_psnr",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Color / Real photo noise",
+      "description": "Blind real-world photo denoising, optimized for fidelity. Useful for mixed camera noise; avoids GAN texture synthesis.",
+      "performance": "Quality-focused; benchmark on your own GPU and tile size.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_color_real_psnr.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_real_psnr.onnx?download=true",
+          "sha256": "231be201ab413dbc999d7951caa9844846b93a12a40a41e037d6b5888ed4e88c",
+          "bytes": 3798678
+        },
+        {
+          "name": "scunet_color_real_psnr.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_real_psnr.onnx.data?download=true",
+          "sha256": "98825ea1210b641c71e5f052f582c70c49fd44b35387ebe2c034268c17df3feb",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "scunet_color_real_gan",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "SCUNet / Perceptual real noise",
+      "description": "Blind real-world photo cleanup with a GAN objective. Can invent plausible texture; choose PSNR models when fidelity matters.",
+      "performance": "Same SCUNet architecture. Sharper-looking does not mean more accurate.",
+      "license": "Apache-2.0 (upstream); export includes MIT notice",
+      "source": "https://huggingface.co/Heliosoph/scunet-onnx",
+      "files": [
+        {
+          "name": "scunet_color_real_gan.onnx",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_real_gan.onnx?download=true",
+          "sha256": "e2bf014ad711f99322f2a94304431ffd6766b79ff00bcebb87d1a4f71c127b2d",
+          "bytes": 3798249
+        },
+        {
+          "name": "scunet_color_real_gan.onnx.data",
+          "url": "https://huggingface.co/Heliosoph/scunet-onnx/resolve/6d11417ee2fbcc73783c502a238ac115097754fe/scunet_color_real_gan.onnx.data?download=true",
+          "sha256": "1e8d582046abf4a773215445c248d0f54751a57d69d2a2312ec59f1150256b79",
+          "bytes": 73138176
+        }
+      ]
+    },
+    {
+      "id": "nafnet_sidd_w64",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "NAFNet-SIDD / High capacity",
+      "description": "High-capacity width-64 real-noise denoiser trained on SIDD. Strong heavy option for natural camera noise; not an absolute winner for every photo.",
+      "performance": "Largest model in this catalog (~446 MiB); GPU recommended. Upstream SIDD result: 40.30 dB; app results depend on input/tiling.",
+      "license": "MIT",
+      "source": "https://github.com/megvii-research/NAFNet",
+      "files": [
+        {
+          "name": "NAFNet-SIDD-width64.onnx",
+          "url": "https://huggingface.co/deepghs/image_restoration/resolve/77885239ff28876d6b37dd080ab86aa1de2c49cc/NAFNet-SIDD-width64.onnx?download=true",
+          "sha256": "9b8d0cf8a9563b04213e0253c6d7bf595beb49d77824bfed8facee7c59ba4d40",
+          "bytes": 467748365
+        }
+      ]
+    },
+    {
+      "id": "nafnet_sidd_w32",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "NAFNet-SIDD / Balanced",
+      "description": "Width-32 real-noise photo denoiser trained on SIDD. Smaller alternative to width64.",
+      "performance": "About 112 MiB; lower capacity than width64. Compare detail retention on your photos.",
+      "license": "MIT",
+      "source": "https://huggingface.co/tomfl/obscura-models",
+      "files": [
+        {
+          "name": "nafnet-sidd-w32.onnx",
+          "url": "https://huggingface.co/tomfl/obscura-models/resolve/d55684db2a6d43c29bed6223c6bbf0fb11bbcdae/nafnet-sidd-w32.onnx?download=true",
+          "sha256": "092dc37894ee36f3ceef1359f73b0e566a24c9194138458cfd92b56d8f74647a",
+          "bytes": 117085438
+        }
+      ]
+    },
+    {
+      "id": "restormer_real",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 0,
+      "title": "Restormer / Real photo noise",
+      "description": "Transformer-based real-image denoiser from Restormer. A high-quality alternative for camera noise, with different strengths from NAFNet and SCUNet.",
+      "performance": "About 102 MiB; transformer workload. Performance and memory depend on tile size/GPU.",
+      "license": "MIT",
+      "source": "https://github.com/swz30/Restormer",
+      "files": [
+        {
+          "name": "restormer_real_denoise.onnx",
+          "url": "https://huggingface.co/kortique/photoview-ai-models/resolve/db2b050bcecf5c9b9398b92dd4fba38f573c9ae6/permissive/restormer_real_denoise.onnx?download=true",
+          "sha256": "07dbeeae6d09c4102f31a3111289dcac3c4a5e82559f25a531ab6a78bc7fffb9",
+          "bytes": 106992741
+        }
+      ]
+    },
+    {
+      "id": "swinir_color_25",
+      "channels": 3,
+      "input_channels": 3,
+      "adapter": "image",
+      "fixed_tile": 128,
+      "title": "SwinIR / Gaussian sigma25",
+      "description": "Swin Transformer denoising specialist for Gaussian sigma25. A benchmark alternative, not a universal blind photo denoiser.",
+      "performance": "Fixed 128x128 tiles for this export; about 52 MiB.",
+      "license": "MIT",
+      "source": "https://github.com/JingyunLiang/SwinIR",
+      "files": [
+        {
+          "name": "swinir_denoising_color_25.onnx",
+          "url": "https://huggingface.co/Heliosoph/swinir-onnx/resolve/a4a77e2c33c32cfa4f39953b2aa87afec7f34aef/swinir_denoising_color_25.onnx?download=true",
+          "sha256": "5fb427215c6a893b4c4aa27b6ab0aad66742fb9cb7ab24f65eff27b09cc2ea74",
+          "bytes": 54860607
+        }
+      ]
+    },
+    {
+      "id": "drunet_color",
+      "channels": 3,
+      "input_channels": 4,
+      "adapter": "noise-map",
+      "fixed_tile": 0,
+      "title": "DRUNet / Noise-level control",
+      "description": "RGB convolutional denoiser with a fourth-channel sigma map. Strength controls sigma from 0 to 50 in 8-bit noise units.",
+      "performance": "About 125 MiB; convolutional architecture. Noise-map adapter; actual speed depends on hardware.",
+      "license": "MIT",
+      "source": "https://github.com/cszn/DPIR",
+      "files": [
+        {
+          "name": "drunet_color.onnx",
+          "url": "https://huggingface.co/synthscript/drunet-color-onnx/resolve/a2b9fccfa27b197f44a3876c567f5e48970c44a7/drunet_color.onnx?download=true",
+          "sha256": "2ae3ab5eb15daac2ee79be984d584b908ce7f0f60b27be87d005f728c2aa0087",
+          "bytes": 130589232
+        }
+      ]
+    }
+  ]
+}
