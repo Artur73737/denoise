@@ -5,15 +5,21 @@
 #include <math.h>
 
 static int process_tiles(DnImage *image, DnBackend *backend, const DnOptions *options,
-    int channels, float *result, DnError *err) {
+    const DnModel *model, float *result, DnError *err) {
+    const int channels = model->channels;
     const int tile = options->tile, halo = 32, core = tile - halo * 2;
     const size_t plane = (size_t)tile * tile;
-    float *input = malloc(plane * channels * sizeof(float));
+    float *input = malloc(plane * model->input_channels * sizeof(float));
     float *output = malloc(plane * channels * sizeof(float));
     UINT tx, ty;
     size_t done = 0, total = ((image->width + core - 1) / core) * (size_t)((image->height + core - 1) / core);
     int ok = 0;
     if (!input || !output) { dn_error(err, "Out of memory for image tiles"); goto finish; }
+    if (model->noise_map) {
+        size_t i;
+        float sigma = (50.0f * options->amount / 100.0f) / 255.0f;
+        for (i = 0; i < plane; ++i) input[3 * plane + i] = sigma;
+    }
     for (ty = 0; ty < image->height; ty += core) {
         for (tx = 0; tx < image->width; tx += core) {
             int x, y, c;
@@ -54,14 +60,14 @@ int dn_process(DnImage *image, const DnOptions *options, const DnModel *model, c
     if (!options->amount) return 1;
     result = malloc(pixels * 3 * sizeof(float));
     if (!result) return dn_error(err, "Out of memory for the output image");
-    if (!dn_backend_open(&backend, graph, model->channels, options->tile, options->cpu, options->device, err)) goto finish;
+    if (!dn_backend_open(&backend, graph, model->input_channels, model->channels, options->tile, options->cpu, options->device, err)) goto finish;
     dn_status(DN_INFERENCE, "Backend: %s | Model: %s | Strength: %d", dn_backend_name(backend), model->id, options->amount);
-    if (!process_tiles(image, backend, options, model->channels, result, err)) {
+    if (!process_tiles(image, backend, options, model, result, err)) {
         if (!dn_cancelled() && !strncmp(dn_backend_name(backend), "DirectML", 8)) {
             dn_status(DN_SESSION, "GPU inference failed: %s. Retrying the full image on CPU", err->message);
             dn_backend_close(backend); backend = NULL;
-            if (!dn_backend_open(&backend, graph, model->channels, options->tile, 1, -1, err) ||
-                !process_tiles(image, backend, options, model->channels, result, err)) goto finish;
+            if (!dn_backend_open(&backend, graph, model->input_channels, model->channels, options->tile, 1, -1, err) ||
+                !process_tiles(image, backend, options, model, result, err)) goto finish;
         } else goto finish;
     }
     /* Commit only after every tile succeeded. The alpha channel stays untouched. */

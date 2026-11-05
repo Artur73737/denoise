@@ -32,6 +32,7 @@ static int output_path(const wchar_t *input, const wchar_t *requested, const wch
 int dn_job_run(void *context, DnError *err) {
     DnJob *job = context;
     DnOptions *options = &job->options;
+    DnOptions effective;
     DnImage image = {0};
     const DnModel *model;
     wchar_t *input = calloc(DN_PATH, sizeof(wchar_t)), *cache = calloc(DN_PATH, sizeof(wchar_t)), *graph = calloc(DN_PATH, sizeof(wchar_t));
@@ -56,7 +57,12 @@ int dn_job_run(void *context, DnError *err) {
     if (model->channels == 1 && !image.grayscale) { dn_error(err, "This model requires a grayscale image. Choose a scunet_color_* model to preserve the image colors"); goto done; }
     if (!dn_models_directory(cache, err)) goto done;
     if (!dn_model_ensure(model, cache, options->offline, graph, err)) goto done;
-    if (!dn_process(&image, options, model, graph, err)) goto done;
+    effective = *options;
+    if (model->fixed_tile) {
+        effective.tile = model->fixed_tile;
+        dn_status(DN_SESSION, "%s requires fixed %dx%d tiles", model->id, effective.tile, effective.tile);
+    }
+    if (!dn_process(&image, &effective, model, graph, err)) goto done;
     if (dn_cancelled()) goto canceled_or_done;
     dn_status(DN_SAVE, image.storage ? "Saving image; preserving original container and metadata" : "Saving uncompressed RGB/RGBA16 TIFF; source stays unchanged");
     if (!dn_image_save_new(job->output, &image, err)) goto done;

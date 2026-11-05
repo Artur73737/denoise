@@ -90,15 +90,29 @@ def child(output):
             records[i].kind=1;records[i].event.key=Key(i==0,1,vk,0,Char(unicode=char),0)
         count=W.DWORD();assert k.WriteConsoleInputW(input_handle,records,2,C.byref(count)) and count.value==2
     try:
-        first=wait_text('MODEL ID');assert 'scunet_color_50' in first and 'MiB' in first and 'STATUS' in first
+        first=wait_text('MODEL ID',45);assert 'scunet_color_50' in first and 'MiB' in first and 'STATUS' in first
+        assert 'Online catalog' in first
         (output/'library.txt').write_text(first,encoding='utf-8')
         press(0x28);press(0x28)
         heavy=wait_text('Color / Heavy noise');assert '--model scunet_color_50' in heavy
         (output/'selected.txt').write_text(heavy,encoding='utf-8')
+        h=handle('CONOUT$');resize(h,100,24);k.CloseHandle(h)
+        press(0x23)  # End: scroll beyond the first seven visible entries.
+        scrolled=wait_text('DRUNet / Noise-level control')
+        assert '--model drunet_color' in scrolled
+        (output/'scrolled.txt').write_text(scrolled,encoding='utf-8')
+        press(0x24);press(0x28);press(0x28);wait_text('Color / Heavy noise')
         h=handle('CONOUT$');resize(h,60,18);k.CloseHandle(h)
         wait_text('Resize the terminal')
         h=handle('CONOUT$');resize(h,100,32);k.CloseHandle(h)
         wait_text('Color / Heavy noise')
+        cached=ROOT/'build/bin/models/catalog.json'
+        before=cached.stat().st_mtime_ns
+        press(ord('R'),'r')
+        deadline=time.monotonic()+45
+        while cached.stat().st_mtime_ns==before and time.monotonic()<deadline:time.sleep(.1)
+        assert cached.stat().st_mtime_ns>before,'R did not fetch/replace the online catalog cache'
+        wait_text('MODEL ID',45)
         press(0x0d,'\r')
         completed=wait_text('Completed',20);assert 'Model installed and SHA-256 verified' in completed
         (output/'installed.txt').write_text(completed,encoding='utf-8')
@@ -142,7 +156,7 @@ def child(output):
         assert source.read_bytes()==original_bytes
         assert marker in snapshot()
         assert k.GetConsoleMode(input_handle,C.byref(mode)) and mode.value==original_mode.value
-        (output/'result.json').write_text(json.dumps({'passed':True,'checks':['real console buffer rendering','model . command','keyboard selection','resize down/up','installed-model verification','download view and cancellation when missing','back navigation','quit','interactive image form','Unicode path input','strength 100 from form','worker-thread GPU processing','original terminal and input mode restored']}))
+        (output/'result.json').write_text(json.dumps({'passed':True,'checks':['real console buffer rendering','model . command','online catalog fetch on entry and R','catalog scrolling beyond seven entries','keyboard selection','resize down/up','installed-model verification','download view and cancellation when missing','back navigation','quit','interactive image form','Unicode path input','strength 100 from form','worker-thread GPU processing','original terminal and input mode restored']}))
     finally:
         if k.WaitForSingleObject(process.process,0)!=0:k.TerminateProcess(process.process,1)
         for h in [process.thread,process.process,input_handle,original]:k.CloseHandle(h)
@@ -153,7 +167,7 @@ if __name__=='__main__':
     else:
         OUT.mkdir(parents=True)
         startup=subprocess.STARTUPINFO();startup.dwFlags|=subprocess.STARTF_USESHOWWINDOW;startup.wShowWindow=0
-        p=subprocess.run([sys.executable,__file__,str(OUT)],creationflags=subprocess.CREATE_NEW_CONSOLE,startupinfo=startup,capture_output=True,text=True,timeout=90)
+        p=subprocess.run([sys.executable,__file__,str(OUT)],creationflags=subprocess.CREATE_NEW_CONSOLE,startupinfo=startup,capture_output=True,text=True,timeout=180)
         if p.returncode:raise AssertionError(p.stdout+'\n'+p.stderr)
         assert (OUT/'result.json').exists()
         print('Real hidden-console TUI tests passed:',OUT)

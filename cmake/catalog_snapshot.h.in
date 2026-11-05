@@ -1,0 +1,2 @@
+/* Generated from catalog/models.json. The runtime refreshes this snapshot online. */
+static const char dn_bundled_catalog[] = "@DN_CATALOG_C_STRING@";

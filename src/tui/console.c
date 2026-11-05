@@ -151,7 +151,7 @@ static DWORD WINAPI worker(void *context) {
     InterlockedExchange(&state->finished, 1);
     return 0;
 }
-int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *context, DnError *err) {
+static int tui_run_ex(const char *title, const wchar_t *subtitle, DnWork work, void *context, DnError *err, int auto_return) {
     Ui ui;
     WorkState state = {0};
     HANDLE thread;
@@ -173,6 +173,7 @@ int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *co
         KEY_EVENT_RECORD event;
         ULONGLONG now = GetTickCount64();
         finished = InterlockedCompareExchange(&state.finished, 0, 0) != 0;
+        if (finished && auto_return) break;
         EnterCriticalSection(&state.lock); p = state.progress; LeaveCriticalSection(&state.lock);
         if (p.stage == DN_DOWNLOAD) {
             if (strcmp(sample_subject, p.subject) || p.done < sample_bytes) {
@@ -227,14 +228,25 @@ int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *co
     DeleteCriticalSection(&state.lock); close_ui(&ui);
     return state.ok;
 }
+int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *context, DnError *err) {
+    return tui_run_ex(title,subtitle,work,context,err,0);
+}
+int dn_tui_catalog_refresh(DnError *err) {
+    return tui_run_ex("FETCH MODEL CATALOG",L"Fetching current model profiles; cached/bundled fallback is available",dn_catalog_refresh,NULL,err,1);
+}
 
 int dn_tui_models(DnError *err) {
     Ui ui;
     DnInstall *install = calloc(1, sizeof(*install));
-    int installed[32] = {0}, selected = 0, done = 0;
+    int installed[128] = {0}, selected = 0, done = 0, top = 0;
     size_t i, count = dn_model_count();
     if (!install) return dn_error(err, "Out of memory");
-    if (count > 32 || !dn_models_directory(install->cache, err) || !open_ui(&ui, L"Photo Denoise - Model Library", err)) { free(install); return 0; }
+    if (!count || count > 128 || !dn_models_directory(install->cache, err) || !open_ui(&ui, L"Photo Denoise - Model Library", err)) { free(install); return 0; }
+    {
+        DnError refresh_error = {{0}};
+        tui_run_ex("FETCH MODEL CATALOG",L"GitHub online catalog; cached/bundled fallback when offline",dn_catalog_refresh,NULL,&refresh_error,1);
+        dn_cancel_reset(); count=dn_model_count();
+    }
     if (frame(&ui)) { line(&ui, 3, 2, ui.width - 6, ACCENT, "PHOTO DENOISE  /  MODEL LIBRARY"); line(&ui, 3, 4, ui.width - 6, TEXT, "Checking installed models and SHA-256 integrity..."); paint(&ui); }
     for (i = 0; i < count; ++i) installed[i] = dn_model_ready(dn_model_at(i), install->cache);
     while (!done) {
@@ -242,15 +254,21 @@ int dn_tui_models(DnError *err) {
         const DnModel *model = dn_model_at(selected);
         if (frame(&ui)) {
             if (!small(&ui)) {
-                int width = ui.width - 6, detail = 6 + (int)count;
+                int width = ui.width - 6, visible = ui.height - 17, detail;
+                if (visible > (int)count) visible=(int)count;
+                if (selected < top) top=selected;
+                if (selected >= top+visible) top=selected-visible+1;
+                if (top+visible>(int)count) top=(int)count-visible;
+                if (top<0) top=0;
+                detail=6+visible;
                 line(&ui, 3, 1, width, ACCENT, "PHOTO DENOISE  /  MODEL LIBRARY");
-                line(&ui, 3, 2, width, MUTED, "Choose a model, read its details, then press Enter to install or repair.");
-                line(&ui, 3, 4, width - 28, MUTED, "MODEL ID");
+                line(&ui, 3, 2, width, MUTED, dn_catalog_status());
+                format(&ui, 3, 4, width - 28, MUTED, "MODEL ID  (%d-%d of %zu)",top+1,top+visible,count);
                 line(&ui, ui.width - 28, 4, 12, MUTED, "DISK SIZE");
                 line(&ui, ui.width - 15, 4, 12, MUTED, "STATUS");
-                for (i = 0; i < count; ++i) {
+                for (i = (size_t)top; i < (size_t)(top+visible); ++i) {
                     const DnModel *item = dn_model_at(i);
-                    int row = 5 + (int)i, x;
+                    int row = 5 + (int)i-top, x;
                     WORD color = (int)i == selected ? SELECTED : TEXT;
                     if ((int)i == selected) for (x = 2; x < ui.width - 2; ++x) ui.cells[row * ui.width + x].Attributes = SELECTED;
                     format(&ui, 3, row, width - 28, color, "%c %s", (int)i == selected ? '>' : ' ', item->id);
@@ -264,7 +282,7 @@ int dn_tui_models(DnError *err) {
                 format(&ui, 3, detail + 5, width, TEXT, "Use: --model %s", model->id);
                 wide(&ui, 3, ui.height - 4, width, MUTED, install->cache);
                 line(&ui, 3, ui.height - 3, width, MUTED, "Not ready = missing, partial or failed integrity check. Performance varies by device.");
-                line(&ui, 3, ui.height - 2, width, ACCENT, "Up/Down or J/K  Select   Enter  Install/repair   R  Refresh   Esc/Q  Back");
+                line(&ui, 3, ui.height - 2, width, ACCENT, "Up/Down Select   Enter Install/repair   R Fetch catalog   Esc/Q Back");
             }
             paint(&ui);
         }
@@ -274,7 +292,14 @@ int dn_tui_models(DnError *err) {
         else if (event.wVirtualKeyCode == VK_DOWN || event.wVirtualKeyCode == 'J') selected = (selected + 1) % (int)count;
         else if (event.wVirtualKeyCode == VK_HOME) selected = 0;
         else if (event.wVirtualKeyCode == VK_END) selected = (int)count - 1;
-        else if (event.wVirtualKeyCode == 'R') for (i = 0; i < count; ++i) installed[i] = dn_model_ready(dn_model_at(i), install->cache);
+        else if (event.wVirtualKeyCode == VK_NEXT) { selected+=7;if(selected>=(int)count)selected=(int)count-1; }
+        else if (event.wVirtualKeyCode == VK_PRIOR) { selected-=7;if(selected<0)selected=0; }
+        else if (event.wVirtualKeyCode == 'R') {
+            DnError refresh_error={{0}};
+            tui_run_ex("REFRESH MODEL CATALOG",L"Fetching latest curated model descriptions and pinned files",dn_catalog_refresh,NULL,&refresh_error,1);
+            dn_cancel_reset(); count=dn_model_count();if(selected>=(int)count)selected=(int)count-1;
+            for (i=0;i<count;++i) installed[i]=dn_model_ready(dn_model_at(i),install->cache);
+        }
         else if (event.wVirtualKeyCode == VK_RETURN) {
             DnError install_error = {{0}};
             wchar_t name[128];

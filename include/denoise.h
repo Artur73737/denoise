@@ -32,6 +32,10 @@ typedef struct {
     const char *weights_hash;
     size_t graph_bytes;
     const char *title, *description, *performance;
+    const char *graph_file, *weights_file, *graph_url, *weights_url;
+    size_t weights_bytes;
+    const char *license, *source;
+    int input_channels, fixed_tile, noise_map;
 } DnModel;
 
 typedef enum { DN_IDLE, DN_DECODE, DN_VERIFY, DN_DOWNLOAD, DN_SESSION, DN_INFERENCE, DN_SAVE, DN_DONE } DnStage;
@@ -54,6 +58,11 @@ const DnModel *dn_model_at(size_t index);
 const DnModel *dn_model_find(const char *id);
 int dn_model_ready(const DnModel *model, const wchar_t *cache);
 uint64_t dn_model_size(const DnModel *model);
+int dn_catalog_init(DnError *err);
+int dn_catalog_refresh(void *context, DnError *err);
+int dn_catalog_validate_json(const char *json, size_t length, DnError *err);
+const char *dn_catalog_status(void);
+int dn_http_catalog(const wchar_t *url, char **json, size_t *length, DnError *err);
 typedef struct {
     const wchar_t *input, *output, *cache;
     int amount, cpu, device, tile, offline;
@@ -84,7 +93,7 @@ int dn_model_ensure(const DnModel *model, const wchar_t *cache, int offline, wch
 int dn_file_verify(const wchar_t *path, const char *hash, size_t expected_bytes);
 int dn_download(const wchar_t *url, const wchar_t *path, const char *hash, size_t expected_bytes, DnError *err);
 int dn_gpu_list(void);
-int dn_backend_open(DnBackend **out, const wchar_t *model, int channels, int tile, int cpu, int device, DnError *err);
+int dn_backend_open(DnBackend **out, const wchar_t *model, int input_channels, int output_channels, int tile, int cpu, int device, DnError *err);
 int dn_backend_run(DnBackend *backend, float *input, float *output, DnError *err);
 void dn_backend_close(DnBackend *backend);
 const char *dn_backend_name(const DnBackend *backend);

@@ -179,7 +179,7 @@ int dn_native_load(const wchar_t *path, DnImage *image, DnError *err) {
     if (!dn_storage_open(path, image, err)) return 0;
     s = image->storage;
     image->has_alpha = !s->bmp && s->samples == 4;
-    strcpy_s(image->decoder, sizeof(image->decoder), "TIFF/BMP conservativo");
+    strcpy_s(image->decoder, sizeof(image->decoder), "Native TIFF/BMP");
     image->width = s->width; image->height = s->height;
     image->rgba = malloc((size_t)s->width * s->height * 4 * sizeof(float));
     row = malloc((size_t)s->stride);

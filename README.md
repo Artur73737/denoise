@@ -1,4 +1,4 @@
-# Photo Denoise 1.2
+# Photo Denoise 1.3
 
 Modular C11 photo denoising for Windows x64. Interactive terminal UI, automatic
 model installation, DirectML GPU inference on compatible AMD/NVIDIA/Intel devices,
@@ -20,6 +20,8 @@ of the working directory. The old `--models` directory override was removed.
 # Process an image with a specific model.
 .\dist\denoise\denoise.exe "E:\photos\image.CR2" 100 --model scunet_color_50
 .\dist\denoise\denoise.exe "E:\photos\image.DNG" 50 --model scunet_color_real_psnr
+.\dist\denoise\denoise.exe "E:\photos\image.CR2" 70 --model nafnet_sidd_w64
+.\dist\denoise\denoise.exe "E:\photos\image.CR2" 70 --model restormer_real
 .\dist\denoise\denoise.exe "E:\photos\image.jpg" 50 --output "E:\photos\clean.tif"
 ```
 
@@ -30,16 +32,19 @@ and output saving. Press Esc/Ctrl+C to request cancellation; Enter returns after
 completion or failure. Cancellation waits for the current network/runtime call
 to return. Terminal contents and input modes are restored on exit.
 
-The model library supports Up/Down or J/K, Home/End, Enter to install/repair,
-R to recheck the cache, and Esc/Q to leave. It shows descriptions, RGB/grayscale
+The model library **fetches the online catalog on entry**. R fetches it again;
+Up/Down or J/K, Home/End and PageUp/PageDown navigate the scrolling list, Enter
+installs/repairs, and Esc/Q leaves. It shows descriptions, RGB/grayscale
 requirements, disk size, verified installed status, and qualitative performance
-notes. Models share the SCUNet architecture; no invented GPU timing or speedup
+notes across several architectures; no invented GPU timing or universal-best
 claims are presented. A terminal of at least 72 columns by 24 rows is recommended.
 
 For scripts or redirected output:
 
 ```powershell
 .\dist\denoise\denoise.exe model list
+.\dist\denoise\denoise.exe model refresh
+.\dist\denoise\denoise.exe model list --offline
 .\dist\denoise\denoise.exe model install scunet_color_50 --no-tui
 .\dist\denoise\denoise.exe "E:\photos\image.CR3" 100 --model scunet_color_50 --no-tui
 ```
@@ -58,6 +63,28 @@ Plain English progress is automatic when standard input/output is redirected.
 | `scunet_gray_25` | Grayscale, moderate Gaussian noise | ~73.37 MiB |
 | `scunet_gray_50` | Grayscale, heavy Gaussian noise | ~73.37 MiB |
 | `scunet_color_real_psnr` | RGB, mixed real-world photo noise; fidelity-oriented | ~73.37 MiB |
+| `scunet_color_real_gan` | RGB, perceptual cleanup; may invent texture | ~73.37 MiB |
+| `nafnet_sidd_w64` | High-capacity real-noise denoiser, SIDD width64 | ~446.08 MiB |
+| `nafnet_sidd_w32` | Smaller NAFNet real-noise alternative, SIDD width32 | ~111.66 MiB |
+| `restormer_real` | Transformer for real-image noise | ~102.04 MiB |
+| `swinir_color_25` | Gaussian sigma25 specialist; fixed 128x128 tiles | ~52.32 MiB |
+| `drunet_color` | Convolutional denoiser with continuous sigma-map control | ~124.54 MiB |
+
+The largest/high-capacity choice here is **`nafnet_sidd_w64`**. It is not a claim
+that one model wins on every camera/noise pattern. Restormer and blind SCUNet
+are alternatives for real noise. A stronger Gaussian setting or GAN sharpness
+does not automatically mean higher fidelity. Compare detail and noise on your
+own image; no supported model is advertised as the most powerful in absolute terms.
+
+The catalog is fetched from
+[`catalog/models.json`](https://github.com/Artur73737/denoise/blob/main/catalog/models.json),
+not hardcoded to a single model/family. A validated copy is stored in the local
+`models/catalog.json`; unavailable/invalid updates fall back to the last valid
+copy or the embedded build-time snapshot. New entries using supported adapters
+can appear without rebuilding. Each row declares exact artifacts, hashes, sizes,
+URLs, licenses, input channels and tile constraints. Catalog validation rejects
+unsupported adapters, malformed URLs/paths, duplicate entries and invalid sizes.
+See [catalog maintenance and provenance](catalog/README.md).
 
 `--model` accepts these exact IDs, the corresponding `.onnx` filename, or aliases
 `auto`, `real`, `15`, `25`, `50`. A named model overrides automatic selection at
@@ -68,11 +95,15 @@ Automatic selection is a documented heuristic: grayscale/RGB plus strength
 1-33 -> sigma15, 34-66 -> sigma25, **67-100 -> sigma50**. It does not estimate the
 image's actual noise. Network output is blended with the original using
 `strength / 100`. Changing networks at the thresholds can cause visual jumps;
-pin a model to keep the same network throughout a strength adjustment.
+pin a model to keep the same network throughout a strength adjustment. DRUNet
+additionally receives a fourth constant noise-map channel: sigma is
+`50 * strength / 100`, normalized by 255. Its RGB output still uses the same blend.
+Fixed-shape exports such as SwinIR automatically use the catalog's required tile.
 Strength 0 makes an exact byte-for-byte copy and needs no model.
 
-Each variant has a ~3.8 MB graph and ~73.1 MB external weight file. Both must be
-present and SHA-256 verified before inference. Downloads use HTTPS, pinned file
+SCUNet variants have a ~3.8 MB graph plus ~73.1 MB external weights. Other entries
+use single-file ONNX artifacts of the sizes shown above. Every declared file must
+be present and SHA-256 verified before inference. Downloads use HTTPS, pinned file
 sizes and SHA-256 values, an immutable upstream revision, and atomic installation.
 The UI shows bytes, percentage, transfer speed and ETA once enough data arrives.
 Interrupted transfers stay in `.download` files and resume using HTTP Range.
@@ -86,10 +117,8 @@ The previously interrupted strength-100 release download was incomplete at
 and strength-100 inference were tested successfully. A first install can take
 time; the UI now distinguishes downloading from loading the inference session.
 
-Models: [SCUNet upstream](https://github.com/cszn/SCUNet), ONNX exports from
-[Heliosoph/scunet-onnx](https://huggingface.co/Heliosoph/scunet-onnx), pinned to
-`6d11417ee2fbcc73783c502a238ac115097754fe`. Catalog, descriptions and checksums are
-in `src/model/catalog.c`. The four Adobe `.data` containers in `winml/` remain
+Model sources, immutable revisions, licenses and artifact hashes are recorded in
+`catalog/models.json` and `catalog/README.md`. The four Adobe `.data` containers in `winml/` remain
 unchanged and are not loaded: their proprietary wrapper has not been integrated.
 
 ## Input and output formats
@@ -164,18 +193,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package.ps1 -Include
 ```
 
 Setup downloads and verifies official ONNX Runtime DirectML 1.24.1, DirectML
-1.15.4 and LibRaw 0.22.3 Windows packages. DirectML's multi-architecture archive
+1.15.4 and LibRaw 0.22.3 Windows packages. The MIT-licensed cJSON 1.7.19 parser is
+vendored as unmodified C source. DirectML's multi-architecture archive
 is ~202 MB; only required x64 DLLs are distributed. Licensing notices, LibRaw
 CDDL/LGPL terms and its unmodified source/binary archive are under `licenses/`.
 The upstream model is Apache-2.0; the export also includes a separate MIT notice,
 both retained. The package includes SHA-256 checksums and only complete cached
-model file pairs from `build/bin/models`.
+model files from `build/bin/models`; fetched catalog metadata can always be refreshed.
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
 python tests\integration.py --inference
 python tests\formats.py
 python tests\models.py
+python tests\catalog.py
+python tests\families.py  # Optional: install the additional models first
 python tests\tui_console.py
 ```
 
@@ -184,7 +216,11 @@ roundtrips, 8/16-bit grayscale/RGB/RGBA, endian/strip variants, alpha/metadata,
 RAW/DNG/JPEG/PNG/deflate TIFF, precision, Unicode, output collisions, GPU/CPU
 agreement and fallback, model selection and exact-copy strength 0. Real Win32
 console tests exercise rendered buffers, keyboard selection, terminal resizing,
-nested install/back screens, download cancellation and terminal restoration.
+nested install/back screens, online refresh, catalog scrolling, download cancellation
+and terminal restoration. Catalog tests also load and run a newly introduced model
+ID without rebuilding the executable, and verify invalid-cache fallback.
+The added NAFNet width32/64, Restormer, SwinIR and DRUNet exports were each run on
+the RX 6700 XT, including DRUNet's distinct input/output channel counts.
 
 A real Canon EOS 1100D CR2 was developed and denoised to 4290x2856 RGB16 TIFF on
 the RX 6700 XT in ~77 seconds; the original SHA-256 stayed identical. A synthetic
@@ -196,7 +232,9 @@ include/          Shared C interfaces
 src/cli/          English command parsing and script output
 src/app/          Processing/install jobs and progress events
 src/tui/          Native full-screen terminal rendering and keyboard handling
-src/model/        Catalog, selection, verification, resumable HTTPS downloads
+catalog/          Online JSON catalog with supported adapters and provenance
+src/model/        Catalog fetch/cache/validation, selection and model downloads
+vendor/cjson/     Pinned MIT-licensed C JSON parser
 src/backend/      DXGI and ONNX Runtime DirectML/CPU
 src/image/        Native TIFF/BMP, LibRaw C API, Windows codecs, TIFF16 writer
 src/pipeline/     Tiling, reflection, blending and CPU retry

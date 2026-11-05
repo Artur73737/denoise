@@ -7,11 +7,12 @@
 #include <errno.h>
 
 static void help(void) {
-    puts("PHOTO DENOISE 1.2 - C / DirectML / CPU\n\n"
+    puts("PHOTO DENOISE 1.3 - C / DirectML / CPU\n\n"
          "Usage: denoise.exe <image> <0..100> [options]\n"
          "       denoise.exe model                  Interactive model library\n"
          "       denoise.exe model list             List model IDs and installed status\n"
          "       denoise.exe model install <id>     Install/repair a specific model\n\n"
+         "       denoise.exe model refresh          Fetch the online model catalog\n\n"
          "  --model <id>       Catalog ID, e.g. scunet_color_50 or scunet_color_real_psnr\n"
          "                     Short aliases: auto (default), real, 15, 25, 50\n"
          "  --output <file>    New output file; developed RAW/codec images use .tif/.tiff\n"
@@ -49,7 +50,15 @@ static int model_command(int argc, wchar_t **argv, DnError *err) {
     if (!install) return dn_error(err, "Out of memory");
     if (!dn_models_directory(install->cache, err)) goto done;
     if (argc == 2 || (argc == 3 && !wcscmp(argv[2], L"."))) { ok = dn_tui_models(err); goto done; }
-    if (argc == 3 && !wcscmp(argv[2], L"list")) {
+    if (argc == 3 && !wcscmp(argv[2],L"refresh")) {
+        dn_cancel_reset();dn_set_progress(dn_plain_progress,NULL);
+        ok=dn_catalog_refresh(NULL,err);dn_set_progress(NULL,NULL);
+        if(ok) puts(dn_catalog_status());goto done;
+    }
+    if ((argc == 3 || (argc==4 && !wcscmp(argv[3],L"--offline"))) && !wcscmp(argv[2], L"list")) {
+        DnError refresh_error={{0}};
+        if(argc==3) { dn_cancel_reset();dn_catalog_refresh(NULL,&refresh_error); }
+        puts(dn_catalog_status());
         puts("MODEL ID                       SIZE (MiB)   STATUS");
         for (i = 0; i < dn_model_count(); ++i) {
             const DnModel *m = dn_model_at(i);
@@ -62,6 +71,12 @@ static int model_command(int argc, wchar_t **argv, DnError *err) {
         plain = argc == 5 || !dn_tui_available();
         if (!model_id(argv[3], id, sizeof(id))) { dn_error(err, "Invalid model ID"); goto done; }
         install->model = dn_model_find(id);
+        if (!install->model) {
+            DnError refresh_error={{0}};
+            if (!plain) dn_tui_catalog_refresh(&refresh_error);
+            else { dn_cancel_reset();dn_set_progress(dn_plain_progress,NULL);dn_catalog_refresh(NULL,&refresh_error);dn_set_progress(NULL,NULL); }
+            dn_cancel_reset();install->model=dn_model_find(id);
+        }
         if (!install->model) { dn_error(err, "Unknown catalog model ID. Run 'denoise.exe model list'"); goto done; }
         if (!plain) ok = dn_tui_run("INSTALL MODEL", argv[3], dn_install_run, install, err);
         else {
@@ -71,7 +86,7 @@ static int model_command(int argc, wchar_t **argv, DnError *err) {
         }
         goto done;
     }
-    dn_error(err, "Usage: denoise.exe model [list | install <catalog-id> [--no-tui]]");
+    dn_error(err, "Usage: denoise.exe model [list [--offline] | refresh | install <catalog-id> [--no-tui]]");
 done:
     free(install); return ok;
 }
@@ -116,7 +131,7 @@ int wmain(int argc, wchar_t **argv) {
             } else if (!wcscmp(arg, L"--tile")) {
                 if (!integer(value, 128, 512, &job->options.tile) || job->options.tile % 64) { dn_error(&err, "Tile size must be 128..512 and divisible by 64"); goto done; }
             } else if (!wcscmp(arg, L"--model")) {
-                if (!model_id(value, selected, sizeof(selected)) || !dn_model_select(0, 50, selected)) { dn_error(&err, "Unknown model ID or alias. Open 'denoise.exe model' to choose one"); goto done; }
+                if (!model_id(value, selected, sizeof(selected))) { dn_error(&err, "Invalid model ID encoding or length"); goto done; }
             } else { dn_error(&err, "Unknown option"); goto done; }
         } else if (positional++ == 0) job->options.input = arg;
         else if (positional == 2) {
@@ -124,6 +139,13 @@ int wmain(int argc, wchar_t **argv) {
         } else { dn_error(&err, "Too many positional arguments"); goto done; }
     }
     if (!job->options.input || job->options.amount < 0) { help(); dn_error(&err, "Specify an image path and strength from 0 through 100"); goto done; }
+    if (!dn_model_select(0,job->options.amount,selected) && !job->options.offline) {
+        DnError refresh_error={{0}};
+        if (!no_tui && dn_tui_available()) dn_tui_catalog_refresh(&refresh_error);
+        else { dn_cancel_reset();dn_set_progress(dn_plain_progress,NULL);dn_catalog_refresh(NULL,&refresh_error);dn_set_progress(NULL,NULL); }
+        dn_cancel_reset();
+    }
+    if (!dn_model_select(0,job->options.amount,selected)) { dn_error(&err,"Unknown model ID or alias. Open 'denoise.exe model' to fetch the catalog and choose one");goto done; }
     used_tui = !no_tui && dn_tui_available();
     if (used_tui) result = dn_tui_run("DENOISE IMAGE", job->options.input, dn_job_run, job, &err) ? 0 : 1;
     else {

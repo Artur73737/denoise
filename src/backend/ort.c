@@ -14,7 +14,7 @@ struct DnBackend {
     OrtMemoryInfo *memory;
     OrtAllocator *allocator;
     char *input_name, *output_name;
-    int channels, tile, gpu;
+    int input_channels, output_channels, tile, gpu;
     char name[256];
 };
 typedef struct { int id; SIZE_T memory; wchar_t name[128]; } DnGpu;
@@ -80,6 +80,9 @@ static int make_session(DnBackend *b, const wchar_t *path, int device, DnError *
     ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "batch", 1));
     ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "height", b->tile));
     ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "width", b->tile));
+    ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "b", 1));
+    ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "h", b->tile));
+    ORT_CHECK(b->api->AddFreeDimensionOverrideByName(options, "w", b->tile));
     if (device >= 0) {
         ORT_CHECK(b->api->DisableMemPattern(options));
         ORT_CHECK(b->api->GetExecutionProviderApi("DML", ORT_API_VERSION, (const void **)&dml));
@@ -107,7 +110,7 @@ static int validate_type(DnBackend *b, int output, DnError *err) {
     ORT_CHECK(b->api->GetDimensionsCount(tensor, &rank));
     if (type != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || rank != 4) { dn_error(err, "Model must use float32 NCHW tensors"); goto done; }
     ORT_CHECK(b->api->GetDimensions(tensor, dims, 4));
-    if ((dims[0] > 0 && dims[0] != 1) || dims[1] != b->channels ||
+    if ((dims[0] > 0 && dims[0] != 1) || (dims[1] > 0 && dims[1] != (output ? b->output_channels : b->input_channels)) ||
         (dims[2] > 0 && dims[2] != b->tile) || (dims[3] > 0 && dims[3] != b->tile)) {
         dn_error(err, "Model shape does not match the selected tile size/channel count"); goto done;
     }
@@ -116,7 +119,7 @@ done:
     if (info) b->api->ReleaseTypeInfo(info);
     return ok;
 }
-int dn_backend_open(DnBackend **out, const wchar_t *model, int channels, int tile, int cpu, int device, DnError *err) {
+int dn_backend_open(DnBackend **out, const wchar_t *model, int input_channels, int output_channels, int tile, int cpu, int device, DnError *err) {
     DnBackend *b = calloc(1, sizeof(*b));
     DnGpu gpus[32];
     int n, i, ok = 0;
@@ -124,7 +127,7 @@ int dn_backend_open(DnBackend **out, const wchar_t *model, int channels, int til
     *out = NULL;
     if (!b) return dn_error(err, "Out of memory");
     b->api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
-    b->channels = channels; b->tile = tile;
+    b->input_channels = input_channels; b->output_channels = output_channels; b->tile = tile;
     if (!b->api) { free(b); return dn_error(err, "Incompatible ONNX Runtime version"); }
     ORT_CHECK(b->api->CreateEnvWithCustomLogger(runtime_log, NULL, ORT_LOGGING_LEVEL_ERROR, "denoise", &b->env));
     if (!cpu) {
@@ -163,17 +166,19 @@ done:
 }
 int dn_backend_run(DnBackend *b, float *input, float *output, DnError *err) {
     OrtValue *in = NULL, *out = NULL;
-    int64_t shape[] = {1, b->channels, b->tile, b->tile};
-    size_t bytes = (size_t)b->channels * b->tile * b->tile * sizeof(float);
+    int64_t input_shape[] = {1, b->input_channels, b->tile, b->tile};
+    int64_t output_shape[] = {1, b->output_channels, b->tile, b->tile};
+    size_t input_bytes = (size_t)b->input_channels * b->tile * b->tile * sizeof(float);
+    size_t output_bytes = (size_t)b->output_channels * b->tile * b->tile * sizeof(float);
     const OrtValue *inputs[1];
     const char *in_names[] = {b->input_name}, *out_names[] = {b->output_name};
     size_t i;
     int ok = 0;
-    ORT_CHECK(b->api->CreateTensorWithDataAsOrtValue(b->memory, input, bytes, shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &in));
-    ORT_CHECK(b->api->CreateTensorWithDataAsOrtValue(b->memory, output, bytes, shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &out));
+    ORT_CHECK(b->api->CreateTensorWithDataAsOrtValue(b->memory, input, input_bytes, input_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &in));
+    ORT_CHECK(b->api->CreateTensorWithDataAsOrtValue(b->memory, output, output_bytes, output_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &out));
     inputs[0] = in;
     ORT_CHECK(b->api->Run(b->session, NULL, in_names, inputs, 1, out_names, 1, &out));
-    for (i = 0; i < bytes / sizeof(float); ++i) {
+    for (i = 0; i < output_bytes / sizeof(float); ++i) {
         if (!isfinite(output[i])) { dn_error(err, "Model produced non-finite output values"); goto done; }
     }
     ok = 1;

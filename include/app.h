@@ -14,6 +14,7 @@ int dn_job_run(void *context, DnError *err);
 int dn_install_run(void *context, DnError *err);
 int dn_tui_available(void);
 int dn_tui_models(DnError *err);
+int dn_tui_catalog_refresh(DnError *err);
 int dn_tui_form(wchar_t *path, size_t capacity, int *strength, DnError *err);
 int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *context, DnError *err);
 void dn_plain_progress(void *context, const DnProgress *progress);
