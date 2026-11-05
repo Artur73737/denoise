@@ -24,7 +24,7 @@ int dn_http_catalog(const wchar_t *url, char **json, size_t *length, DnError *er
     buffer = malloc(limit + 1);
     if (!buffer) return dn_error(err,"Out of memory");
     dn_status(DN_DOWNLOAD,"Fetching online model catalog");
-    session=WinHttpOpen(L"PhotoDenoise-Catalog/1.3",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0);
+    session=WinHttpOpen(L"PhotoDenoise-Catalog/1.3.1",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0);
     if (!session) goto network_error;
     if (!WinHttpSetTimeouts(session,5000,5000,5000,5000)) goto network_error;
     connection=WinHttpConnect(session,host,parts.nPort,0);

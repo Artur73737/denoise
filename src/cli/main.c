@@ -7,7 +7,7 @@
 #include <errno.h>
 
 static void help(void) {
-    puts("PHOTO DENOISE 1.3 - C / DirectML / CPU\n\n"
+    puts("PHOTO DENOISE 1.3.1 - C / DirectML / CPU\n\n"
          "Usage: denoise.exe <image> <0..100> [options]\n"
          "       denoise.exe model                  Interactive model library\n"
          "       denoise.exe model list             List model IDs and installed status\n"
@@ -28,6 +28,7 @@ static void help(void) {
          "  --help\n\n"
          "Models are ALWAYS stored in the models folder beside this executable.\n"
          "Interactive terminals show a full-screen UI; no scrolling progress dumps.\n"
+         "After denoising, the UI closes automatically and stdout contains only the output path.\n"
          "Strength 0 makes an exact copy. Automatic strength 67..100 selects sigma50.\n"
          "RAW is developed to RGB16 TIFF; source files stay unchanged.\n"
          "Proprietary Adobe .data containers are not used.");
@@ -147,14 +148,13 @@ int wmain(int argc, wchar_t **argv) {
     }
     if (!dn_model_select(0,job->options.amount,selected)) { dn_error(&err,"Unknown model ID or alias. Open 'denoise.exe model' to fetch the catalog and choose one");goto done; }
     used_tui = !no_tui && dn_tui_available();
-    if (used_tui) result = dn_tui_run("DENOISE IMAGE", job->options.input, dn_job_run, job, &err) ? 0 : 1;
+    if (used_tui) result = dn_tui_job(job, &err) ? 0 : 1;
     else {
         dn_cancel_reset(); dn_set_progress(dn_plain_progress, NULL);
         result = dn_job_run(job, &err) ? 0 : 1; dn_set_progress(NULL, NULL);
-        if (!result) fwprintf(stdout, L"Saved: %ls\n", job->output);
-        if (!result) fprintf(stderr, "Completed in %.2f s\n", job->elapsed);
     }
+    if (!result) fwprintf(stdout, L"%ls\n", job->output);
 done:
-    if (result && err.message[0] && !used_tui) fprintf(stderr, "Error: %s\n", err.message);
+    if (result && err.message[0]) fprintf(stderr, "Error: %s\n", err.message);
     free(interactive); free(job); return result;
 }

@@ -78,7 +78,7 @@ int dn_tiff_save_new(const wchar_t *path, const DnImage *image, DnError *err) {
     add(main_tags,&n,273,4,1,&pixel_offset); add(main_tags,&n,274,3,1,&orient);
     add(main_tags,&n,277,3,1,&samples); add(main_tags,&n,278,4,1,&image->height); add(main_tags,&n,279,4,1,&pixel_bytes);
     add(main_tags,&n,282,5,1,xdpi); add(main_tags,&n,283,5,1,ydpi); add(main_tags,&n,284,3,1,&planar); add(main_tags,&n,296,3,1,&unit);
-    text(main_tags,&n,305,"Photo Denoise 1.3 (C/ONNX Runtime)"); text(main_tags,&n,306,m->datetime); text(main_tags,&n,315,m->artist);
+    text(main_tags,&n,305,"Photo Denoise 1.3.1 (C/ONNX Runtime)"); text(main_tags,&n,306,m->datetime); text(main_tags,&n,315,m->artist);
     if (samples == 4) add(main_tags,&n,338,3,1,&extra);
     add(main_tags,&n,34665,4,1,&exif_offset);
     if (m->icc && m->icc_size) add(main_tags,&n,34675,7,m->icc_size,m->icc);

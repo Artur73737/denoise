@@ -23,6 +23,8 @@ for i,model in enumerate(['auto','scunet_color_50','SCUNET_COLOR_50.onnx']):
     target=OUT/f'heavy{i}.tif'
     p=call(source,100,'--model',model,'--offline','--no-tui','--tile',128,'--output',target)
     assert 'Model: scunet_color_50 | Strength: 100' in p.stderr
+    assert p.stdout == str(target)+'\n',repr(p.stdout)
+    assert 'Completed in' not in p.stderr and 'Saved:' not in p.stderr
     if i:assert target.read_bytes()==(OUT/'heavy0.tif').read_bytes()
 p=call(source,100,'--model','scunet_color_25','--offline','--no-tui','--tile',128,'--output',OUT/'pinned25.tif')
 assert 'Model: scunet_color_25 | Strength: 100' in p.stderr

@@ -231,6 +231,9 @@ static int tui_run_ex(const char *title, const wchar_t *subtitle, DnWork work, v
 int dn_tui_run(const char *title, const wchar_t *subtitle, DnWork work, void *context, DnError *err) {
     return tui_run_ex(title,subtitle,work,context,err,0);
 }
+int dn_tui_job(DnJob *job, DnError *err) {
+    return tui_run_ex("DENOISE IMAGE",job->options.input,dn_job_run,job,err,1);
+}
 int dn_tui_catalog_refresh(DnError *err) {
     return tui_run_ex("FETCH MODEL CATALOG",L"Fetching current model profiles; cached/bundled fallback is available",dn_catalog_refresh,NULL,err,1);
 }

@@ -45,7 +45,7 @@ int dn_job_run(void *context, DnError *err) {
     if (!options->amount) {
         if (!output_path(input, options->output, extension(input), 0, job->output, err)) goto done;
         if (!CopyFileW(input, job->output, TRUE)) { dn_error(err, "Exact copy failed (Windows error %lu)", GetLastError()); goto done; }
-        dn_status(DN_DONE, "Exact byte-for-byte copy saved: %ls", job->output); ok = 1; goto done;
+        ok = 1; goto done;
     }
     if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED))) { dn_error(err, "Cannot initialize image services"); goto done; }
     com = 1;
@@ -66,7 +66,6 @@ int dn_job_run(void *context, DnError *err) {
     if (dn_cancelled()) goto canceled_or_done;
     dn_status(DN_SAVE, image.storage ? "Saving image; preserving original container and metadata" : "Saving uncompressed RGB/RGBA16 TIFF; source stays unchanged");
     if (!dn_image_save_new(job->output, &image, err)) goto done;
-    dn_status(DN_DONE, "Saved: %ls", job->output);
     ok = 1; goto done;
 canceled_or_done:
     if (dn_cancelled()) dn_error(err, "Canceled; source file unchanged");

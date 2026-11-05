@@ -1,0 +1,53 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Photo Denoise" Manufacturer="Artur73737"
+           Version="$(var.Version)" Language="1033" Scope="perUser"
+           UpgradeCode="DAD346B7-431F-4244-B5C0-66D3B4E736B6" InstallerVersion="500">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Photo Denoise is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Property Id="ARPCONTACT" Value="https://github.com/Artur73737/denoise" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Artur73737/denoise" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="INSTALLFOLDER" Secure="yes">
+      <RegistrySearch Id="PreviousInstallFolder" Root="HKCU" Key="Software\Artur73737\PhotoDenoise"
+                      Name="InstallPath" Type="raw" />
+    </Property>
+    <Launch Condition="VersionNT64" Message="Photo Denoise requires 64-bit Windows." />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="PhotoDenoise">
+          <Directory Id="MODELSFOLDER" Name="models" />
+          <Directory Id="LICENSESFOLDER" Name="licenses" />
+          <Component Id="UserPath" Guid="*">
+            <RegistryValue Root="HKCU" Key="Software\Artur73737\PhotoDenoise"
+                           Name="InstallPath" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+            <Environment Id="UserPathEntry" Name="PATH" Value="[INSTALLFOLDER]"
+                         Action="set" Part="last" System="no" Permanent="no" />
+            <CreateFolder Directory="MODELSFOLDER" />
+            <RemoveFolder Id="RemoveModelsIfEmpty" Directory="MODELSFOLDER" On="uninstall" />
+            <RemoveFolder Id="RemoveLicensesIfEmpty" Directory="LICENSESFOLDER" On="uninstall" />
+            <RemoveFolder Id="RemoveInstallIfEmpty" Directory="INSTALLFOLDER" On="uninstall" />
+            <RemoveFolder Id="RemoveUserProgramsIfEmpty" Directory="UserProgramsFolder" On="uninstall" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="Photo Denoise">
+        <Component Id="MenuShortcuts" Guid="*">
+          <RegistryValue Root="HKCU" Key="Software\Artur73737\PhotoDenoise"
+                         Name="Shortcuts" Type="integer" Value="1" KeyPath="yes" />
+          <Shortcut Id="DenoiseShortcut" Name="Photo Denoise" Target="[INSTALLFOLDER]denoise.exe"
+                    WorkingDirectory="INSTALLFOLDER" Description="Denoise a photograph" />
+          <Shortcut Id="ModelsShortcut" Name="Photo Denoise Models" Target="[INSTALLFOLDER]denoise.exe"
+                    Arguments="model" WorkingDirectory="INSTALLFOLDER" Description="Browse and download denoising models" />
+          <RemoveFolder Id="RemoveMenuFolder" On="uninstall" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="MainFeature" Title="Photo Denoise" Level="1">
+      <ComponentGroupRef Id="Payload" />
+      <ComponentRef Id="UserPath" />
+      <ComponentRef Id="MenuShortcuts" />
+    </Feature>
+  </Package>
+</Wix>

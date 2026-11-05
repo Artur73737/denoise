@@ -33,6 +33,7 @@ def child(output):
     k.GetConsoleScreenBufferInfo.argtypes=[W.HANDLE,C.POINTER(Info)]
     k.SetConsoleScreenBufferSize.argtypes=[W.HANDLE,Coord]
     k.SetConsoleWindowInfo.argtypes=[W.HANDLE,W.BOOL,C.POINTER(Rect)]
+    k.SetConsoleCursorPosition.argtypes=[W.HANDLE,Coord]
     k.ReadConsoleOutputCharacterW.argtypes=[W.HANDLE,W.LPWSTR,W.DWORD,Coord,C.POINTER(W.DWORD)]
     k.WriteConsoleOutputCharacterW.argtypes=[W.HANDLE,W.LPCWSTR,W.DWORD,Coord,C.POINTER(W.DWORD)]
     k.WriteConsoleInputW.argtypes=[W.HANDLE,C.POINTER(Record),W.DWORD,C.POINTER(W.DWORD)]
@@ -51,6 +52,7 @@ def child(output):
     for h in [input_handle,original]:assert k.SetHandleInformation(h,1,1)
     marker='RESTORED ORIGINAL TERMINAL'
     written=W.DWORD();assert k.WriteConsoleOutputCharacterW(original,marker,len(marker),Coord(0,0),C.byref(written))
+    assert k.SetConsoleCursorPosition(original,Coord(0,1))
 
     def resize(h,w,hgt):
         info=Info();assert k.GetConsoleScreenBufferInfo(h,C.byref(info))
@@ -146,11 +148,12 @@ def child(output):
         press(0x09,'\t');press(0x24);press(0x2e);press(0x2e)
         for char in '100':press(0,char)
         press(0x0d,'\r')
-        job_done=wait_text('Completed',45)
-        assert 'Saved:' in job_done
+        # No completion keystroke: processing must restore the terminal and exit.
+        assert k.WaitForSingleObject(process.process,45000)==0,'Denoise did not exit automatically'
+        job_done=snapshot()
         (output/'image_done.txt').write_text(job_done,encoding='utf-8')
-        press(0x0d,'\r')
-        assert k.WaitForSingleObject(process.process,10000)==0
+        assert 'Saved:' not in job_done and 'Completed in' not in job_done
+        assert source.stem+'_denoised_100.tif' in job_done
         assert k.GetExitCodeProcess(process.process,C.byref(result)) and result.value==0
         assert source.with_stem(source.stem+'_denoised_100').with_suffix('.tif').exists()
         assert source.read_bytes()==original_bytes

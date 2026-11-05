@@ -1,4 +1,4 @@
-# Photo Denoise 1.3
+# Photo Denoise 1.3.1
 
 Modular C11 photo denoising for Windows x64. Interactive terminal UI, automatic
 model installation, DirectML GPU inference on compatible AMD/NVIDIA/Intel devices,
@@ -28,9 +28,11 @@ of the working directory. The old `--models` directory override was removed.
 Interactive terminals show a full-screen interface instead of scrolling progress
 logs. Run without arguments for the image-path/strength form. During a job, the UI
 shows decoding, cache verification, download progress, model loading, inference,
-and output saving. Press Esc/Ctrl+C to request cancellation; Enter returns after
-completion or failure. Cancellation waits for the current network/runtime call
-to return. Terminal contents and input modes are restored on exit.
+and output saving. After processing, the UI closes automatically, restores the
+terminal, prints only the absolute output path to stdout, and exits. No final
+keypress is needed. Errors go to stderr with a nonzero exit code. Press
+Esc/Ctrl+C to request cancellation, which waits for the current network/runtime
+call to return. Model-install screens still use Enter/Esc to return to the library.
 
 The model library **fetches the online catalog on entry**. R fetches it again;
 Up/Down or J/K, Home/End and PageUp/PageDown navigate the scrolling list, Enter
@@ -50,7 +52,28 @@ For scripts or redirected output:
 ```
 
 Plain English progress is automatic when standard input/output is redirected.
+Progress goes to stderr; successful image-processing stdout is exactly one path
+followed by a newline, including for strength 0.
 `model` without a subcommand requires an interactive terminal.
+
+## Windows installer
+
+Download `PhotoDenoise-1.3.1-x64.msi` from the GitHub release. The per-user installer
+uses `%LOCALAPPDATA%\Programs\PhotoDenoise`, adds it to the user PATH (open a new
+terminal), and creates Start menu shortcuts. Models remain in the writable
+`models` directory beside the executable. The MSI includes native dependencies,
+the Visual C++ runtime DLLs, licenses, and the model catalog; weights are downloaded
+on demand. Upgrades/uninstall preserve downloaded weights and user files.
+
+```powershell
+denoise.exe model
+denoise.exe "E:\photos\moon.CR2" 25 --model scunet_color_15
+
+# Build the MSI after building the executable. Requires .NET 8 SDK only to build WiX.
+.\scripts\installer.ps1
+# Unattended installation:
+msiexec /i PhotoDenoise-1.3.1-x64.msi /qn /norestart
+```
 
 ## Model selection and downloads
 
@@ -209,6 +232,7 @@ python tests\models.py
 python tests\catalog.py
 python tests\families.py  # Optional: install the additional models first
 python tests\tui_console.py
+python tests\installer.py  # Install/uninstall the built MSI in an isolated test folder
 ```
 
 Python is a development test tool only. Tests cover native byte-identical
@@ -245,4 +269,4 @@ licenses/         Third-party licenses
 
 Git is initialized. `.gitignore` excludes builds, distributions, weights, model
 downloads, Adobe blobs, dependency archives, generated test output and local
-investigation evidence. No commit is created automatically.
+investigation evidence. Source and release tags are published to the GitHub repository.
